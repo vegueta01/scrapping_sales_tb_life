@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Procesar Datos{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h2 class="text-center">Procesar Datos</h2>
+        <form id="formulario" onsubmit="event.preventDefault(); iniciarProceso();">
+            <div class="form-group">
+                <label for="nombres">Nombres (uno por línea):</label>
+                <textarea class="form-control" id="nombres" name="nombres" rows="10"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="periodo">Periodo Inicio:</label>
+                <input type="date" class="form-control" id="periodo" name="periodo">
+            </div>
+            <div class="form-group">
+                <label for="periodofin">Periodo Fin:</label>
+                <input type="date" class="form-control" id="periodofin" name="periodofin">
+            </div>
+            <div class="form-group">
+                <label for="porcentaje_comision">Porcentaje de Comisión:</label>
+                <input type="number" class="form-control" id="porcentaje_comision" name="porcentaje_comision" min="0" max="100" step="0.1" value="10">
+            </div>
+            <button type="submit" class="btn btn-success btn-block">Procesar</button>
+        </form>
+        <div id="progreso" class="mt-3 text-center"></div>
+        <div class="text-center mt-3">
+            <a class="btn btn-primary" href="/descargar">Descargar Resultados</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function iniciarProceso() {
+        document.getElementById("progreso").innerHTML = "Iniciando...";
+        const formData = new FormData(document.getElementById("formulario"));
+
+        fetch('/procesar', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json()).then(data => {
+            if (data.status === "Procesando en segundo plano") {
+                const intervalId = setInterval(() => {
+                    actualizarProgreso(intervalId);
+                }, 1000);
+            }
+        });
+    }
+
+    function actualizarProgreso(intervalId) {
+        fetch('/progreso').then(response => response.json()).then(data => {
+            document.getElementById("progreso").innerHTML = `${data.status} (${data.current}/${data.total})`;
+            if (data.current >= data.total) {
+                clearInterval(intervalId);
+                document.getElementById("progreso").innerHTML += " - Completado";
+            }
+        });
+    }
+</script>
+{% endblock %}
